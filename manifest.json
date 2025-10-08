@@ -1,0 +1,8 @@
+{
+  "name": "PhantomBridge",
+  "short_name": "PhantomBridge",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4285f4"
+}
