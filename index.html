@@ -5,28 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PhantomBridge</title>
   <link rel="manifest" href="manifest.json">
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff; }
-    h1 { color: #333; }
-    button { background: #4285f4; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; padding: 10px; background: #f0f0f0; border-radius: 5px; cursor: pointer; }
-    progress { width: 100%; height: 20px; }
-    #error { color: red; }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h1>PhantomBridge</h1>
-  <button onclick="chooseUSB()">Connect USB Drive</button>
-  <button onclick="connectWacom()">Connect Wacom</button>
-  <button onclick="connectPrinter()">Connect Printer</button>
-  <button onclick="connectArduino()">Connect Arduino</button>
-  <ul id="fileList"></ul>
-  <input type="file" id="uploadInput" style="display: none;" onchange="uploadFile(event)">
-  <button onclick="document.getElementById('uploadInput').click()">Upload File</button>
-  <progress id="progress" value="0" max="100"></progress>
-  <div id="error"></div>
-
+  <header>
+    <h1>PhantomBridge</h1>
+  </header>
+  <main>
+    <div class="button-grid">
+      <!-- <button onclick="chooseUSB()">Connect USB Drive</button> -->
+      <button onclick="connectPenTablet()">Connect Pen Tablet</button>
+      <button onclick="testPenSupport()">Test Pen Tablet Support</button>
+      <!-- <button onclick="connectPrinter()">Connect Printer</button>
+      <button onclick="connectArduino()">Connect Arduino</button> -->
+    </div>
+    <!-- <section id="usb-section">
+      <h2>USB Storage</h2>
+      <ul id="fileList"></ul>
+      <input type="file" id="uploadInput" style="display: none;" onchange="uploadFile(event)">
+      <button onclick="document.getElementById('uploadInput').click()">Upload File</button>
+      <progress id="progress" value="0" max="100"></progress>
+    </section> -->
+    <section id="pen-section">
+      <h2>Pen Tablet</h2>
+      <div id="penData">Pen Data: Not connected</div>
+      <canvas id="penCanvas"></canvas>
+      <button onclick="clearCanvas()">Clear Canvas</button>
+      <h3>Pen Log (copy for devs)</h3>
+      <textarea id="penLog" rows="10" readonly></textarea>
+      <button onclick="copyPenLog()">Copy Pen Log</button>
+      <div id="supportedFeatures">Supported Features: Not tested</div>
+    </section>
+    <section id="log-section">
+      <h2>General Log</h2>
+      <textarea id="generalLog" rows="10" readonly></textarea>
+      <button onclick="copyGeneralLog()">Copy General Log</button>
+    </section>
+    <div id="error"></div>
+  </main>
   <script src="script.js"></script>
 </body>
 </html>
