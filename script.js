@@ -327,6 +327,67 @@ async function connectArduino() {
   window.location.href = "arduino.html";
 }
 
+// Transmit message from textbox to Arduino via serial port
+let arduinoReader = null;
+let arduinoTextDecoder = null;
+let arduinoStreamInitialized = false;
+
+async function transmitArduinoMessage() {
+  const errorDiv = document.getElementById('error');
+  const messageInput = document.getElementById('arduinoMessage');
+  const message = messageInput.value;
+  if (!message) {
+    errorDiv.textContent = 'Введіть повідомлення для передачі';
+    errorDiv.classList.add('show');
+    return;
+  }
+  if (!('serial' in navigator)) {
+    errorDiv.textContent = 'WebSerial API не підтримується';
+    errorDiv.classList.add('show');
+    return;
+  }
+  try {
+    // Request serial port if not already open
+    if (!window.gPort) {
+      window.gPort = await navigator.serial.requestPort({});
+      await window.gPort.open({ baudRate: 9600 });
+    }
+    // Initialize persistent reader once
+    if (!arduinoStreamInitialized) {
+      arduinoTextDecoder = new TextDecoderStream();
+      window.gPort.readable.pipeTo(arduinoTextDecoder.writable);
+      arduinoReader = arduinoTextDecoder.readable.getReader();
+      arduinoStreamInitialized = true;
+    }
+    // Encode message as UTF-8 and send
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message + "\n");
+    const writer = window.gPort.writable.getWriter();
+    await writer.write(data);
+    writer.releaseLock();
+    errorDiv.textContent = 'Повідомлення надіслано на Arduino';
+    errorDiv.classList.add('show');
+    console.log('Sent to Arduino:', message);
+
+    // Read response from Arduino (single line)
+    const arduinoReceivedDiv = document.getElementById('arduinoReceived');
+    try {
+      const { value, done } = await arduinoReader.read();
+      if (!done && value) {
+        arduinoReceivedDiv.textContent = 'Received from Arduino: ' + value;
+      } else {
+        arduinoReceivedDiv.textContent = 'No response received from Arduino.';
+      }
+    } catch (err) {
+      arduinoReceivedDiv.textContent = 'Помилка отримання відповіді: ' + err.message;
+    }
+  } catch (err) {
+    console.error('Transmit Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+    errorDiv.textContent = 'Помилка передачі Arduino: ' + err.name + ' - ' + err.message;
+    errorDiv.classList.add('show');
+  }
+}
+
 async function readArduino(){
   try {
     console.log('Starting Arduino connection...');

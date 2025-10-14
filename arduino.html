@@ -17,9 +17,11 @@
 </head>
 <body>
   <h1>PhantomBridge</h1>
-  <button onclick="readArduino()">Read from Arduino</button>
-  <button onclick="writeArduino()">Write to Arduino</button>
+  <label for="arduinoMessage">Message to Arduino:</label>
+  <input type="text" id="arduinoMessage" style="width:70%;padding:8px;margin:8px 0;" placeholder="Enter your message here">
+  <button onclick="transmitArduinoMessage()">Transmit</button>
   <div id="error"></div>
+  <div id="arduinoReceived" style="margin-top:16px;color:#222;background:#e0e0e0;padding:10px;border-radius:5px;"></div>
 
   <script src="script.js"></script>
 </body>
