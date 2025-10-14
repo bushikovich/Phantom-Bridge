@@ -337,35 +337,35 @@ async function readArduino(){
     document.getElementById('error').textContent = 'Arduino connected';
     document.getElementById('error').classList.add('show');
     while(true){
-    try{
-      // Create a TextDecoderStream to decode incoming data
-      const textDecoder = new TextDecoderStream();
-      const readableStreamClosed = gPort.readable.pipeTo(textDecoder.writable);
-      const reader = textDecoder.readable.getReader();
+      try{
+        // Create a TextDecoderStream to decode incoming data
+        const textDecoder = new TextDecoderStream();
+        const readableStreamClosed = gPort.readable.pipeTo(textDecoder.writable);
+        const reader = textDecoder.readable.getReader();
 
-      // Loop to continuously read data
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          // Allow the serial port to be closed later.
-          reader.releaseLock();
-          break;
+        // Loop to continuously read data
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            // Allow the serial port to be closed later.
+            reader.releaseLock();
+            break;
+          }
+          console.log('Arduino read: ', value); // value is now a string
         }
-        console.log('Arduino read: ', value); // value is now a string
-      }
 
-      // Wait for the stream to close
-      await readableStreamClosed;
-      }
-      catch(err){
-          console.error('Read Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+        // Wait for the stream to close
+        await readableStreamClosed;
         }
-  }
-  } catch (err) {
-    console.error('Arduino Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    document.getElementById('error').textContent = 'Помилка Arduino: ' + err.name + ' - ' + err.message;
-    document.getElementById('error').classList.add('show');
-  }
+        catch(err){
+            console.error('Read Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+          }
+      }
+      } catch (err) {
+        console.error('Arduino Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+        document.getElementById('error').textContent = 'Помилка Arduino: ' + err.name + ' - ' + err.message;
+        document.getElementById('error').classList.add('show');
+      }
 }
 
 // Initialize on page load
