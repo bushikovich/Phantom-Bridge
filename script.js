@@ -336,36 +336,53 @@ async function readArduino(){
     console.log('Arduino connected');
     document.getElementById('error').textContent = 'Arduino connected';
     document.getElementById('error').classList.add('show');
-    while(true){
-      try{
-        // Create a TextDecoderStream to decode incoming data
-        const textDecoder = new TextDecoderStream();
-        const readableStreamClosed = gPort.readable.pipeTo(textDecoder.writable);
-        const reader = textDecoder.readable.getReader();
 
-        // Loop to continuously read data
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) {
-            // Allow the serial port to be closed later.
-            reader.releaseLock();
-            break;
-          }
-          console.log('Arduino read: ', value); // value is now a string
-        }
+    // Create a TextDecoderStream to decode incoming data
+    const textDecoder = new TextDecoderStream();
+    const readableStreamClosed = gPort.readable.pipeTo(textDecoder.writable);
+    const reader = textDecoder.readable.getReader();
 
-        // Wait for the stream to close
-        await readableStreamClosed;
-        }
-        catch(err){
-            console.error('Read Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-          }
+    // Loop to continuously read data
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) {
+        // Allow the serial port to be closed later.
+        reader.releaseLock();
+        break;
       }
-      } catch (err) {
-        console.error('Arduino Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-        document.getElementById('error').textContent = 'Помилка Arduino: ' + err.name + ' - ' + err.message;
-        document.getElementById('error').classList.add('show');
-      }
+      console.log('Arduino read: ', value); // value is now a string
+    }
+
+    // Wait for the stream to close
+    await readableStreamClosed;
+  } catch (err) {
+    console.error('Arduino Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+    document.getElementById('error').textContent = 'Помилка Arduino: ' + err.name + ' - ' + err.message;
+    document.getElementById('error').classList.add('show');
+  }
+}
+
+// Write a byte array 'scetch' to Arduino via serial port
+async function writeArduino() {
+  try {
+    // Request serial port if not already open
+    if (!window.gPort) {
+      window.gPort = await navigator.serial.requestPort({});
+      await window.gPort.open({ baudRate: 9600 });
+    }
+    // Example byte array to send (replace with your 'scetch' later)
+    const scetch = new Uint8Array([0x01, 0x02, 0x03, 0x04]);
+    const writer = window.gPort.writable.getWriter();
+    await writer.write(scetch);
+    writer.releaseLock();
+    document.getElementById('error').textContent = 'Дані надіслано на Arduino';
+    document.getElementById('error').classList.add('show');
+    console.log('Sent to Arduino:', scetch);
+  } catch (err) {
+    console.error('Write Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+    document.getElementById('error').textContent = 'Помилка запису Arduino: ' + err.name + ' - ' + err.message;
+    document.getElementById('error').classList.add('show');
+  }
 }
 
 // Initialize on page load
