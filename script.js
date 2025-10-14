@@ -342,19 +342,33 @@ async function connectArduino() {
 }
 
 async function readArduino(){
-  const reader = gPort.readable.getReader();
+  await gPort.open({ baudRate: 9600 });
+
   while(true){
     try{
-      data = reader.read();
-      if(data.done)
-      {
-        console.log('Arduino read: ', data.value);
-      }
+  // Create a TextDecoderStream to decode incoming data
+  const textDecoder = new TextDecoderStream();
+  const readableStreamClosed = gPort.readable.pipeTo(textDecoder.writable);
+  const reader = textDecoder.readable.getReader();
+
+  // Loop to continuously read data
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      // Allow the serial port to be closed later.
+      reader.releaseLock();
+      break;
     }
-    catch(err){
+    console.log('Arduino read: ', value); // value is now a string
+  }
+
+  // Wait for the stream to close
+  await readableStreamClosed;
+  }
+  catch(err){
       console.error('Read Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
     }
-  };
+  }
 }
 
 // Initialize on page load
