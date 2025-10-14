@@ -1,6 +1,7 @@
 let dirHandle = null;
 let penDevice = null;
 let isDrawing = false;
+let gPort = null;
 
 function checkAPISupport(apiName) {
   const errorDiv = document.getElementById('error');
@@ -326,17 +327,34 @@ async function connectArduino() {
   if (!checkAPISupport('webserial')) return;
   try {
     console.log('Starting Arduino connection...');
-    const port = await navigator.serial.requestPort({});
-    console.log('Arduino port opened:', port);
-    await port.open({ baudRate: 9600 });
+    gPort = await navigator.serial.requestPort({});
+    console.log('Arduino port opened:', gPort);
+    await gPort.open({ baudRate: 9600 });
     console.log('Arduino connected');
     document.getElementById('error').textContent = 'Arduino connected';
     document.getElementById('error').classList.add('show');
+    window.location.href = "arduino.html";
   } catch (err) {
     console.error('Arduino Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
     document.getElementById('error').textContent = 'Помилка Arduino: ' + err.name + ' - ' + err.message;
     document.getElementById('error').classList.add('show');
   }
+}
+
+async function readArduino(){
+  const reader = gPort.readable.getReader();
+  while(true){
+    try{
+      data = reader.read();
+      if(data.done)
+      {
+        console.log('Arduino read: ', data.value);
+      }
+    }
+    catch(err){
+      console.error('Read Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+    }
+  };
 }
 
 // Initialize on page load
