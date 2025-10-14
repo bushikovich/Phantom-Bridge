@@ -1,7 +1,6 @@
 let dirHandle = null;
 let penDevice = null;
 let isDrawing = false;
-let gPort = null;
 
 function checkAPISupport(apiName) {
   const errorDiv = document.getElementById('error');
@@ -325,6 +324,10 @@ async function connectPrinter() {
 
 async function connectArduino() {
   if (!checkAPISupport('webserial')) return;
+  window.location.href = "arduino.html";
+}
+
+async function readArduino(){
   try {
     console.log('Starting Arduino connection...');
     gPort = await navigator.serial.requestPort({});
@@ -333,41 +336,35 @@ async function connectArduino() {
     console.log('Arduino connected');
     document.getElementById('error').textContent = 'Arduino connected';
     document.getElementById('error').classList.add('show');
-    window.location.href = "arduino.html";
+    while(true){
+    try{
+      // Create a TextDecoderStream to decode incoming data
+      const textDecoder = new TextDecoderStream();
+      const readableStreamClosed = gPort.readable.pipeTo(textDecoder.writable);
+      const reader = textDecoder.readable.getReader();
+
+      // Loop to continuously read data
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // Allow the serial port to be closed later.
+          reader.releaseLock();
+          break;
+        }
+        console.log('Arduino read: ', value); // value is now a string
+      }
+
+      // Wait for the stream to close
+      await readableStreamClosed;
+      }
+      catch(err){
+          console.error('Read Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+        }
+  }
   } catch (err) {
     console.error('Arduino Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
     document.getElementById('error').textContent = 'Помилка Arduino: ' + err.name + ' - ' + err.message;
     document.getElementById('error').classList.add('show');
-  }
-}
-
-async function readArduino(){
-  await gPort.open({ baudRate: 9600 });
-
-  while(true){
-    try{
-  // Create a TextDecoderStream to decode incoming data
-  const textDecoder = new TextDecoderStream();
-  const readableStreamClosed = gPort.readable.pipeTo(textDecoder.writable);
-  const reader = textDecoder.readable.getReader();
-
-  // Loop to continuously read data
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) {
-      // Allow the serial port to be closed later.
-      reader.releaseLock();
-      break;
-    }
-    console.log('Arduino read: ', value); // value is now a string
-  }
-
-  // Wait for the stream to close
-  await readableStreamClosed;
-  }
-  catch(err){
-      console.error('Read Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    }
   }
 }
 
