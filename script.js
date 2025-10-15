@@ -322,7 +322,12 @@ async function connectPrinter() {
   }
 }
 
-async function connectArduino() {
+async function gotoUSB() {
+  if (!checkAPISupport('fileSystem')) return;
+  window.location.href = "usb.html";
+}
+
+async function gotoArduino() {
   if (!checkAPISupport('webserial')) return;
   window.location.href = "arduino.html";
 }
@@ -385,64 +390,6 @@ async function transmitArduinoMessage() {
     console.error('Transmit Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
     errorDiv.textContent = 'Помилка передачі Arduino: ' + err.name + ' - ' + err.message;
     errorDiv.classList.add('show');
-  }
-}
-
-async function readArduino(){
-  try {
-    console.log('Starting Arduino connection...');
-    gPort = await navigator.serial.requestPort({});
-    console.log('Arduino port opened:', gPort);
-    await gPort.open({ baudRate: 9600 });
-    console.log('Arduino connected');
-    document.getElementById('error').textContent = 'Arduino connected';
-    document.getElementById('error').classList.add('show');
-
-    // Create a TextDecoderStream to decode incoming data
-    const textDecoder = new TextDecoderStream();
-    const readableStreamClosed = gPort.readable.pipeTo(textDecoder.writable);
-    const reader = textDecoder.readable.getReader();
-
-    // Loop to continuously read data
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) {
-        // Allow the serial port to be closed later.
-        reader.releaseLock();
-        break;
-      }
-      console.log('Arduino read: ', value); // value is now a string
-    }
-
-    // Wait for the stream to close
-    await readableStreamClosed;
-  } catch (err) {
-    console.error('Arduino Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    document.getElementById('error').textContent = 'Помилка Arduino: ' + err.name + ' - ' + err.message;
-    document.getElementById('error').classList.add('show');
-  }
-}
-
-// Write a byte array 'scetch' to Arduino via serial port
-async function writeArduino() {
-  try {
-    // Request serial port if not already open
-    if (!window.gPort) {
-      window.gPort = await navigator.serial.requestPort({});
-      await window.gPort.open({ baudRate: 9600 });
-    }
-    // Example byte array to send (replace with your 'scetch' later)
-    const scetch = new Uint8Array([0x01, 0x02, 0x03, 0x04]);
-    const writer = window.gPort.writable.getWriter();
-    await writer.write(scetch);
-    writer.releaseLock();
-    document.getElementById('error').textContent = 'Дані надіслано на Arduino';
-    document.getElementById('error').classList.add('show');
-    console.log('Sent to Arduino:', scetch);
-  } catch (err) {
-    console.error('Write Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    document.getElementById('error').textContent = 'Помилка запису Arduino: ' + err.name + ' - ' + err.message;
-    document.getElementById('error').classList.add('show');
   }
 }
 
