@@ -190,12 +190,230 @@ async function connectWacom() {
   }
 }
 
+// Process no pressure (pressure === 0)
+function process_no_pressure(event, ctx) {
+  ctx.setLineDash([5, 5]); // Dashed line for no pressure
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#333';
+  ctx.globalAlpha = 0.5;
+  console.log('Processing no pressure:', event.pointerType, 'X:', event.offsetX, 'Y:', event.offsetY, 'TiltX:', event.tiltX, 'TiltY:', event.tiltY);
+}
+
+// Process maximum pressure (pressure === 1)
+function process_max_pressure(event, ctx) {
+  ctx.setLineDash([]); // Solid line for max pressure
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = '#333';
+  ctx.globalAlpha = 1.0;
+  console.log('Processing max pressure:', event.pointerType, 'X:', event.offsetX, 'Y:', event.offsetY, 'TiltX:', event.tiltX, 'TiltY:', event.tiltY);
+}
+
+// Process intermediate pressure (0 < pressure < 1)
+function process_pressure(event, ctx) {
+  ctx.setLineDash([]); // Solid line for intermediate pressure
+  ctx.lineWidth = Math.max(1, event.pressure * 5); // Scale line width
+  ctx.strokeStyle = '#333';
+  ctx.globalAlpha = Math.min(1.0, (Math.abs(event.tiltX) + Math.abs(event.tiltY)) / 90); // Transparency based on tilt
+  console.log('Processing intermediate pressure:', event.pressure, 'X:', event.offsetX, 'Y:', event.offsetY, 'TiltX:', event.tiltX, 'TiltY:', event.tiltY);
+}
+
+// Connect to a pen tablet (Wacom, Huion, XP-Pen, Gaomon)
+async function connectPenTablet() {
+  if (!checkAPISupport('webhid')) return;
+  try {
+    console.log('Starting Pen Tablet connection...');
+    const devices = await navigator.hid.requestDevice({
+      filters: [
+        // { vendorId: 0x056a }, // Wacom
+        // { vendorId: 0x256c }, // Huion
+        // { vendorId: 0x28bd }, // XP-Pen
+        // { vendorId: 0x2daf }  // Gaomon
+      ]
+    });
+    penDevice = devices[0];
+    if (!penDevice) {
+      console.error('No Pen Tablet found');
+      throw new Error('Pen Tablet not found');
+    }
+    console.log('Pen Tablet found:', penDevice.productName, 'VendorID:', `0x${penDevice.vendorId.toString(16)}`);
+    await penDevice.open();
+    console.log('Pen Tablet opened successfully');
+    document.getElementById('penData').textContent = `Pen Tablet: ${penDevice.productName} connected`;
+
+    const canvas = document.getElementById('penCanvas');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = 250;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.error('Failed to initialize canvas context');
+      throw new Error('Failed to initialize canvas context');
+    }
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#333';
+
+    // Pointer events for pressure and tilt
+    canvas.addEventListener('pointerdown', (e) => {
+     // if (e.pointerType !== 'pen') return; // Only handle pen events
+      isDrawing = true;
+      const logEntry = `Time: ${new Date().toISOString()}\nType: ${e.pointerType}\nEvent: pointerdown\nPressure: ${e.pressure}\nTiltX: ${e.tiltX}\nTiltY: ${e.tiltY}\nX: ${e.offsetX}\nY: ${e.offsetY}\nButtons: ${e.buttons}\n---\n`;
+      penLog += logEntry;
+      document.getElementById('penLog').value = penLog;
+      document.getElementById('penData').textContent = `Pressure: ${e.pressure}, TiltX: ${e.tiltX}, TiltY: ${e.tiltY}, X: ${e.offsetX}, Y: ${e.offsetY}, Buttons: ${e.buttons}`;
+      
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+      if (e.pressure === 0) {
+        process_no_pressure(e, ctx);
+      } else if (e.pressure === 1) {
+        process_max_pressure(e, ctx);
+      } else {
+        process_pressure(e, ctx);
+      }
+      console.log('Pointer down:', e.pointerType, 'Pressure:', e.pressure, 'TiltX:', e.tiltX, 'TiltY:', e.tiltY, 'X:', e.offsetX, 'Y:', e.offsetY, 'Buttons:', e.buttons);
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      // if (e.pointerType !== 'pen') return;
+      isDrawing = false;
+      ctx.beginPath();
+      const logEntry = `Time: ${new Date().toISOString()}\nType: ${e.pointerType}\nEvent: pointerup\nPressure: ${e.pressure}\nTiltX: ${e.tiltX}\nTiltY: ${e.tiltY}\nX: ${e.offsetX}\nY: ${e.offsetY}\nButtons: ${e.buttons}\n---\n`;
+      penLog += logEntry;
+      document.getElementById('penLog').value = penLog;
+      document.getElementById('penData').textContent = `Pressure: ${e.pressure}, TiltX: ${e.tiltX}, TiltY: ${e.tiltY}, X: ${e.offsetX}, Y: ${e.offsetY}, Buttons: ${e.buttons}`;
+      console.log('Pointer up:', e.pointerType, 'Pressure:', e.pressure, 'TiltX:', e.tiltX, 'TiltY:', e.tiltY, 'X:', e.offsetX, 'Y:', e.offsetY, 'Buttons:', e.buttons);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      // if (e.pointerType !== 'pen' || !isDrawing) return;
+      const logEntry = `Time: ${new Date().toISOString()}\nType: ${e.pointerType}\nEvent: pointermove\nPressure: ${e.pressure}\nTiltX: ${e.tiltX}\nTiltY: ${e.tiltY}\nX: ${e.offsetX}\nY: ${e.offsetY}\nButtons: ${e.buttons}\n---\n`;
+      penLog += logEntry;
+      document.getElementById('penLog').value = penLog;
+      document.getElementById('penData').textContent = `Pressure: ${e.pressure}, TiltX: ${e.tiltX}, TiltY: ${e.tiltY}, X: ${e.offsetX}, Y: ${e.offsetY}, Buttons: ${e.buttons}`;
+      
+      if (e.pressure === 0) {
+        process_no_pressure(e, ctx);
+      } else if (e.pressure === 1) {
+        process_max_pressure(e, ctx);
+      } else {
+        process_pressure(e, ctx);
+      }
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY);
+      console.log('Pointer move:', e.pointerType, 'Pressure:', e.pressure, 'TiltX:', e.tiltX, 'TiltY:', e.tiltY, 'X:', e.offsetX, 'Y:', e.offsetY, 'Buttons:', e.buttons);
+      
+      // Update supported features
+      features.pressure = features.pressure || e.pressure > 0;
+      features.tilt = features.tilt || e.tiltX !== 0 || e.tiltY !== 0;
+      features.buttons = features.buttons || e.buttons !== 0;
+      features.gestures = features.gestures || (e.pointerType === 'pen' && e.buttons !== -1);
+      let featuresText = 'Supported Features:\n';
+      for (let key in features) {
+        featuresText += `${key.charAt(0).toUpperCase() + key.slice(1)}: ${features[key] ? 'Yes' : 'No'}\n`;
+      }
+      document.getElementById('supportedFeatures').textContent = featuresText;
+    });
+
+    // WebHID inputreport for high-precision data
+    penDevice.addEventListener('inputreport', (e) => {
+      try {
+        const data = e.data;
+        const pressure = data.getUint16(2, true) / 65535; // Normalize to 0-1
+        const tiltX = data.getInt16(6, true) || 0;
+        const tiltY = data.getInt16(8, true) || 0;
+        const x = data.getUint16(10, true) || 0;
+        const y = data.getUint16(12, true) || 0;
+        const buttons = data.getUint8(14) || 0;
+        const logEntry = `Time: ${new Date().toISOString()}\nEvent: inputreport\nPressure: ${pressure.toFixed(2)}\nTiltX: ${tiltX}\nTiltY: ${tiltY}\nX: ${x}\nY: ${y}\nButtons: ${buttons}\n---\n`;
+        penLog += logEntry;
+        document.getElementById('penLog').value = penLog;
+        document.getElementById('penData').textContent = `Pressure: ${pressure.toFixed(2)}, TiltX: ${tiltX}, TiltY: ${tiltY}, X: ${x}, Y: ${y}, Buttons: ${buttons}`;
+        console.log(`Pen Tablet Data - Pressure: ${pressure.toFixed(2)}, TiltX: ${tiltX}, TiltY: ${tiltY}, X: ${x}, Y: ${y}, Buttons: ${buttons}`);
+
+        if (isDrawing) {
+          const canvasWidth = canvas.width;
+          const canvasHeight = canvas.height;
+          const scaledX = (x / 65535) * canvasWidth;
+          const scaledY = (y / 65535) * canvasHeight;
+          if (pressure === 0) {
+            process_no_pressure({ pressure, tiltX, tiltY, offsetX: scaledX, offsetY: scaledY }, ctx);
+          } else if (pressure >= 1) {
+            process_max_pressure({ pressure, tiltX, tiltY, offsetX: scaledX, offsetY: scaledY }, ctx);
+          } else {
+            process_pressure({ pressure, tiltX, tiltY, offsetX: scaledX, offsetY: scaledY }, ctx);
+          }
+          ctx.lineTo(scaledX, scaledY);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(scaledX, scaledY);
+        }
+
+        // Update supported features
+        features.pressure = features.pressure || pressure > 0;
+        features.tilt = features.tilt || tiltX !== 0 || tiltY !== 0;
+        features.buttons = features.buttons || buttons !== 0;
+        features.gestures = features.gestures || true; // inputreport implies gesture support
+        let featuresText = 'Supported Features:\n';
+        for (let key in features) {
+          featuresText += `${key.charAt(0).toUpperCase() + key.slice(1)}: ${features[key] ? 'Yes' : 'No'}\n`;
+        }
+        document.getElementById('supportedFeatures').textContent = featuresText;
+      } catch (err) {
+        console.error('Pen Tablet inputreport error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+        document.getElementById('error').textContent = 'Pen Tablet inputreport error: ' + err.message;
+        document.getElementById('error').classList.add('show');
+      }
+    });
+  } catch (err) {
+    console.error('Pen Tablet Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
+    document.getElementById('error').textContent = 'Pen Tablet error: ' + err.message;
+    document.getElementById('error').classList.add('show');
+  }
+}
+
+// Copy pen tablet logs to clipboard
+function copyPenLog() {
+  const logText = document.getElementById('penLog');
+  logText.select();
+  document.execCommand('copy');
+  console.log('Pen log copied to clipboard');
+  document.getElementById('error').textContent = 'Pen log copied';
+  document.getElementById('error').classList.add('show');
+}
+
+// Copy general logs to clipboard
+function copyGeneralLog() {
+  const logText = document.getElementById('generalLog');
+  logText.select();
+  document.execCommand('copy');
+  console.log('General log copied to clipboard');
+  document.getElementById('error').textContent = 'General log copied';
+  document.getElementById('error').classList.add('show');
+}
+
+// Test pen tablet feature support
+async function testPenSupport() {
+  if (!checkAPISupport('webhid')) return;
+  console.log('Starting pen tablet support test...');
+  document.getElementById('supportedFeatures').textContent = 'Testing support... Move the stylus to detect features.';
+  penLog = '';
+  document.getElementById('penLog').value = '';
+  features = { pressure: false, tilt: false, buttons: false, gestures: false };
+}
+
+// Clear the canvas
 function clearCanvas() {
   const canvas = document.getElementById('penCanvas');
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    document.getElementById('error').textContent = 'Canvas очищено';
+    console.log('Canvas cleared');
+    document.getElementById('error').textContent = 'Canvas cleared';
+    document.getElementById('error').classList.add('show');
+  } else {
+    console.error('Canvas context not available');
+    document.getElementById('error').textContent = 'Error: Unable to clear canvas';
     document.getElementById('error').classList.add('show');
   }
 }
@@ -320,6 +538,11 @@ async function connectPrinter() {
       }
     }
   }
+}
+
+async function gotoWacom() {
+  if (!checkAPISupport('webhid')) return;
+  window.location.href = "pentable.html";
 }
 
 async function gotoUSB() {
