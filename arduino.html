@@ -19,7 +19,23 @@
   <h1>PhantomBridge</h1>
   <label for="arduinoMessage">Message to Arduino:</label>
   <input type="text" id="arduinoMessage" style="width:70%;padding:8px;margin:8px 0;" placeholder="Enter your message here">
+  <div style="margin:8px 0;">
+    <label for="baudRate">Baud rate:</label>
+    <select id="baudRate">
+      <option value="300">300</option>
+      <option value="1200">1200</option>
+      <option value="2400">2400</option>
+      <option value="4800">4800</option>
+      <option value="9600" selected>9600</option>
+      <option value="19200">19200</option>
+      <option value="38400">38400</option>
+      <option value="57600">57600</option>
+      <option value="115200">115200</option>
+    </select>
+  </div>
+  <button id="connectArduinoBtn" onclick="connectArduinoPort()">Connect Arduino</button>
   <button onclick="transmitArduinoMessage()">Transmit</button>
+  <div id="arduinoStatus" style="margin-top:8px;color:#666">Disconnected</div>
   <div id="error"></div>
   <div id="arduinoReceived" style="margin-top:16px;color:#222;background:#e0e0e0;padding:10px;border-radius:5px;"></div>
 

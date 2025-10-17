@@ -98,13 +98,12 @@ async function chooseUSB() {
     console.log('Starting USB connection...');
     dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
     console.log('USB directory selected:', dirHandle.name);
-    const fileList = document.getElementById('fileList');
     const errorDiv = document.getElementById('error');
     errorDiv.textContent = '';
     errorDiv.classList.remove('show');
     printDir(dirHandle);
     console.log('USB files listed successfully');
-  errorDiv.textContent = 'USB connected: ' + dirHandle.name;
+    errorDiv.textContent = 'USB connected: ' + dirHandle.name;
     errorDiv.classList.add('show');
   } catch (err) {
     console.error('USB Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
@@ -142,9 +141,9 @@ async function uploadFile(event) {
     await writable.write(file);
     await writable.close();
     console.log('File uploaded successfully:', file.name);
-  errorDiv.textContent = 'File uploaded: ' + file.name;
+    errorDiv.textContent = 'File uploaded: ' + file.name;
     errorDiv.classList.add('show');
-    chooseUSB();
+    printDir(dirHandle);
   } catch (err) {
     console.error('Upload error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
   errorDiv.textContent = 'Upload error: ' + err.name + ' - ' + err.message;
@@ -562,7 +561,7 @@ async function connectPrinter() {
   } catch (err) {
     console.error('Printer Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
     console.error('WebUSB API availability:', !!navigator.usb);
-  document.getElementById('error').textContent = `Printer error: ${err.name} - ${err.message}`;
+    document.getElementById('error').textContent = `Printer error: ${err.name} - ${err.message}`;
     document.getElementById('error').classList.add('show');
   } finally {
     // Clean up: release interface and close device
@@ -572,7 +571,7 @@ async function connectPrinter() {
         console.log(`Interface ${claimedInterface} released`);
       } catch (err) {
         console.warn(`Failed to release interface ${claimedInterface}:`, err.message);
-  document.getElementById('error').textContent = `Interface close error: ${err.message}`;
+        document.getElementById('error').textContent = `Interface close error: ${err.message}`;
         document.getElementById('error').classList.add('show');
       }
     }
@@ -582,7 +581,7 @@ async function connectPrinter() {
         console.log('Printer device closed');
       } catch (err) {
         console.warn('Failed to close device:', err.message);
-  document.getElementById('error').textContent = `Printer close error: ${err.message}`;
+        document.getElementById('error').textContent = `Printer close error: ${err.message}`;
         document.getElementById('error').classList.add('show');
       }
     }
@@ -609,6 +608,12 @@ let arduinoReader = null;
 let arduinoTextDecoder = null;
 let arduinoStreamInitialized = false;
 
+function getSelectedBaudRate() {
+  const el = document.getElementById('baudRate');
+  const val = el ? parseInt(el.value, 10) : NaN;
+  return Number.isFinite(val) ? val : 9600;
+}
+
 async function transmitArduinoMessage() {
   const errorDiv = document.getElementById('error');
   const messageInput = document.getElementById('arduinoMessage');
@@ -624,17 +629,11 @@ async function transmitArduinoMessage() {
     return;
   }
   try {
-    // Request serial port if not already open
-    if (!window.gPort) {
-      window.gPort = await navigator.serial.requestPort({});
-      await window.gPort.open({ baudRate: 9600 });
-    }
-    // Initialize persistent reader once
-    if (!arduinoStreamInitialized) {
-      arduinoTextDecoder = new TextDecoderStream();
-      window.gPort.readable.pipeTo(arduinoTextDecoder.writable);
-      arduinoReader = arduinoTextDecoder.readable.getReader();
-      arduinoStreamInitialized = true;
+    // Ensure port is already connected by user action
+    if (!window.gPort || !window.gPort.readable) {
+      errorDiv.textContent = 'Please connect to the Arduino first (use Connect Arduino)';
+      errorDiv.classList.add('show');
+      return;
     }
     // Encode message as UTF-8 and send
     const encoder = new TextEncoder();
@@ -642,7 +641,7 @@ async function transmitArduinoMessage() {
     const writer = window.gPort.writable.getWriter();
     await writer.write(data);
     writer.releaseLock();
-    errorDiv.textContent = 'Повідомлення надіслано на Arduino';
+    errorDiv.textContent = 'Message sent to Arduino';
     errorDiv.classList.add('show');
     console.log('Sent to Arduino:', message);
 
@@ -652,6 +651,7 @@ async function transmitArduinoMessage() {
       const { value, done } = await arduinoReader.read();
       if (!done && value) {
         arduinoReceivedDiv.textContent = 'Received from Arduino: ' + value;
+        console.log('Received from Arduino: ', value);
       } else {
         arduinoReceivedDiv.textContent = 'No response received from Arduino.';
       }
@@ -662,6 +662,32 @@ async function transmitArduinoMessage() {
     console.error('Transmit Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
   errorDiv.textContent = 'Arduino transmit error: ' + err.name + ' - ' + err.message;
     errorDiv.classList.add('show');
+  }
+}
+
+// Connect to Arduino: request port, open with selected baud rate and initialize reader
+async function connectArduinoPort() {
+  const status = document.getElementById('arduinoStatus');
+  try {
+    if (!('serial' in navigator)) {
+      status.textContent = 'WebSerial API not supported';
+      return;
+    }
+    window.gPort = await navigator.serial.requestPort({});
+    const baud = getSelectedBaudRate();
+    await window.gPort.open({ baudRate: baud });
+
+    // Initialize reader
+    arduinoTextDecoder = new TextDecoderStream();
+    window.gPort.readable.pipeTo(arduinoTextDecoder.writable);
+    arduinoReader = arduinoTextDecoder.readable.getReader();
+    arduinoStreamInitialized = true;
+
+    status.textContent = `Connected (baud ${baud})`;
+    console.log('Arduino connected at', baud);
+  } catch (err) {
+    console.error('Connect Arduino Error:', err);
+    status.textContent = 'Connection error: ' + (err.message || err.name);
   }
 }
 
