@@ -7,34 +7,89 @@ function checkAPISupport(apiName) {
   switch (apiName) {
     case 'fileSystem':
       if (!window.showDirectoryPicker) {
-        errorDiv.textContent = 'File System Access API не підтримується';
+  errorDiv.textContent = 'File System Access API not supported';
         errorDiv.classList.add('show');
         return false;
       }
       break;
     case 'webhid':
       if (!navigator.hid) {
-        errorDiv.textContent = 'WebHID API не підтримується';
+  errorDiv.textContent = 'WebHID API not supported';
         errorDiv.classList.add('show');
         return false;
       }
       break;
     case 'webusb':
       if (!navigator.usb) {
-        errorDiv.textContent = 'WebUSB API не підтримується';
+  errorDiv.textContent = 'WebUSB API not supported';
         errorDiv.classList.add('show');
         return false;
       }
       break;
     case 'webserial':
       if (!navigator.serial) {
-        errorDiv.textContent = 'WebSerial API не підтримується';
+  errorDiv.textContent = 'WebSerial API not supported';
         errorDiv.classList.add('show');
         return false;
       }
       break;
   }
   return true;
+}
+
+async function foundPrevDir(currentDirHandle){
+  // If there is no root directory handle to search from, we can't find a parent.
+  if (!dirHandle) return null;
+
+  // If currentDirHandle is the root, its parent is the root (or null depending on desired behavior).
+  try {
+    if (await dirHandle.isSameEntry(currentDirHandle)) return dirHandle;
+  } catch (e) {
+    // isSameEntry may not be supported; fall through to recursive search
+  }
+
+  // Recursively traverse the directory tree looking for a directory whose child is currentDirHandle
+  async function recurse(parent) {
+    for await (const entry of parent.values()) {
+      if (entry.kind !== 'directory') continue;
+      try {
+        if (await entry.isSameEntry(currentDirHandle)) {
+          // parent contains the target directory
+          return parent;
+        }
+      } catch (e) {
+        // ignore and continue recursion
+      }
+      // Recurse into child
+      const res = await recurse(entry);
+      if (res) return res;
+    }
+    return null;
+  }
+
+  return await recurse(dirHandle);
+
+}
+
+async function printDir(currentDirHandle){
+  fileList.innerHTML = '';
+  //back button
+  const back = document.createElement('li');
+  back.textContent = '.. (Back)';
+  back.onclick = async () => { printDir(await foundPrevDir(currentDirHandle)); }
+  fileList.appendChild(back);
+
+  for await (const entry of currentDirHandle.values()) {
+    const li = document.createElement('li');
+      li.textContent = entry.name;
+      li.onclick = () => 
+        {if(entry.kind==='directory'){
+          printDir(entry, currentDirHandle);
+        }
+        else
+          downloadFile(entry);}
+      fileList.appendChild(li);
+  }
 }
 
 async function chooseUSB() {
@@ -45,21 +100,15 @@ async function chooseUSB() {
     console.log('USB directory selected:', dirHandle.name);
     const fileList = document.getElementById('fileList');
     const errorDiv = document.getElementById('error');
-    fileList.innerHTML = '';
     errorDiv.textContent = '';
     errorDiv.classList.remove('show');
-    for await (const entry of dirHandle.values()) {
-      const li = document.createElement('li');
-      li.textContent = entry.name;
-      li.onclick = () => downloadFile(entry);
-      fileList.appendChild(li);
-    }
+    printDir(dirHandle);
     console.log('USB files listed successfully');
-    errorDiv.textContent = 'USB підключено: ' + dirHandle.name;
+  errorDiv.textContent = 'USB connected: ' + dirHandle.name;
     errorDiv.classList.add('show');
   } catch (err) {
     console.error('USB Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    document.getElementById('error').textContent = 'Помилка USB: ' + err.name + ' - ' + err.message;
+    document.getElementById('error').textContent = 'USB error: ' + err.name + ' - ' + err.message;
     document.getElementById('error').classList.add('show');
   }
 }
@@ -74,12 +123,12 @@ async function uploadFile(event) {
 
   console.log('Starting upload... File:', file ? file.name : 'none');
   if (!file) {
-    errorDiv.textContent = 'Виберіть файл для завантаження';
+  errorDiv.textContent = 'Select a file to upload';
     errorDiv.classList.add('show');
     return;
   }
   if (!dirHandle) {
-    errorDiv.textContent = 'Спочатку підключіть USB-пристрій';
+  errorDiv.textContent = 'Connect a USB device first';
     errorDiv.classList.add('show');
     return;
   }
@@ -93,12 +142,12 @@ async function uploadFile(event) {
     await writable.write(file);
     await writable.close();
     console.log('File uploaded successfully:', file.name);
-    errorDiv.textContent = 'Файл завантажено: ' + file.name;
+  errorDiv.textContent = 'File uploaded: ' + file.name;
     errorDiv.classList.add('show');
     chooseUSB();
   } catch (err) {
     console.error('Upload error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    errorDiv.textContent = 'Помилка завантаження: ' + err.name + ' - ' + err.message;
+  errorDiv.textContent = 'Upload error: ' + err.name + ' - ' + err.message;
     document.getElementById('error').classList.add('show');
   }
 }
@@ -118,7 +167,7 @@ async function downloadFile(entry) {
     console.log('File downloaded successfully:', entry.name);
   } catch (err) {
     console.error('Download error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    document.getElementById('error').textContent = 'Помилка завантаження: ' + err.name + ' - ' + err.message;
+  document.getElementById('error').textContent = 'Download error: ' + err.name + ' - ' + err.message;
     document.getElementById('error').classList.add('show');
   }
 }
@@ -130,7 +179,7 @@ async function connectWacom() {
     const devices = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x056a }] });
     penDevice = devices[0];
     if (!penDevice) {
-      throw new Error('Wacom не знайдено');
+  throw new Error('Wacom not found');
     }
     console.log('Wacom device found:', penDevice.productName);
     await penDevice.open();
@@ -142,7 +191,7 @@ async function connectWacom() {
     canvas.height = 250;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      throw new Error('Не вдалося ініціалізувати canvas');
+  throw new Error('Failed to initialize canvas');
     }
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#333';
@@ -179,13 +228,13 @@ async function connectWacom() {
         }
       } catch (err) {
         console.error('Wacom inputreport error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-        document.getElementById('error').textContent = 'Помилка обробки Wacom: ' + err.message;
+  document.getElementById('error').textContent = 'Wacom processing error: ' + err.message;
         document.getElementById('error').classList.add('show');
       }
     });
   } catch (err) {
     console.error('Wacom Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    document.getElementById('error').textContent = 'Помилка Wacom: ' + err.name + ' - ' + err.message;
+  document.getElementById('error').textContent = 'Wacom error: ' + err.name + ' - ' + err.message;
     document.getElementById('error').classList.add('show');
   }
 }
@@ -513,7 +562,7 @@ async function connectPrinter() {
   } catch (err) {
     console.error('Printer Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
     console.error('WebUSB API availability:', !!navigator.usb);
-    document.getElementById('error').textContent = `Помилка принтера: ${err.name} - ${err.message}`;
+  document.getElementById('error').textContent = `Printer error: ${err.name} - ${err.message}`;
     document.getElementById('error').classList.add('show');
   } finally {
     // Clean up: release interface and close device
@@ -523,7 +572,7 @@ async function connectPrinter() {
         console.log(`Interface ${claimedInterface} released`);
       } catch (err) {
         console.warn(`Failed to release interface ${claimedInterface}:`, err.message);
-        document.getElementById('error').textContent = `Помилка закриття інтерфейсу: ${err.message}`;
+  document.getElementById('error').textContent = `Interface close error: ${err.message}`;
         document.getElementById('error').classList.add('show');
       }
     }
@@ -533,7 +582,7 @@ async function connectPrinter() {
         console.log('Printer device closed');
       } catch (err) {
         console.warn('Failed to close device:', err.message);
-        document.getElementById('error').textContent = `Помилка закриття принтера: ${err.message}`;
+  document.getElementById('error').textContent = `Printer close error: ${err.message}`;
         document.getElementById('error').classList.add('show');
       }
     }
@@ -607,11 +656,11 @@ async function transmitArduinoMessage() {
         arduinoReceivedDiv.textContent = 'No response received from Arduino.';
       }
     } catch (err) {
-      arduinoReceivedDiv.textContent = 'Помилка отримання відповіді: ' + err.message;
+  arduinoReceivedDiv.textContent = 'Error receiving response: ' + err.message;
     }
   } catch (err) {
     console.error('Transmit Serial Error - Name:', err.name, 'Message:', err.message, 'Stack:', err.stack);
-    errorDiv.textContent = 'Помилка передачі Arduino: ' + err.name + ' - ' + err.message;
+  errorDiv.textContent = 'Arduino transmit error: ' + err.name + ' - ' + err.message;
     errorDiv.classList.add('show');
   }
 }
