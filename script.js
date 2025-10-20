@@ -195,17 +195,17 @@ async function connectWacom() {
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#333';
 
-    canvas.addEventListener('mousedown', () => { isDrawing = true; });
-    canvas.addEventListener('mouseup', () => { isDrawing = false; ctx.beginPath(); });
-    canvas.addEventListener('mousemove', (e) => {
-      if (isDrawing) {
-        ctx.lineWidth = 2;
-        ctx.lineTo(e.offsetX, e.offsetY);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(e.offsetX, e.offsetY);
-      }
-    });
+    // canvas.addEventListener('mousedown', () => { isDrawing = true; });
+    // canvas.addEventListener('mouseup', () => { isDrawing = false; ctx.beginPath(); });
+    // canvas.addEventListener('mousemove', (e) => {
+    //   if (isDrawing) {
+    //     ctx.lineWidth = 2;
+    //     ctx.lineTo(e.offsetX, e.offsetY);
+    //     ctx.stroke();
+    //     ctx.beginPath();
+    //     ctx.moveTo(e.offsetX, e.offsetY);
+    //   }
+    // });
 
     penDevice.addEventListener('inputreport', (e) => {
       try {
@@ -243,7 +243,7 @@ function process_no_pressure(event, ctx) {
   ctx.setLineDash([5, 5]); // Dashed line for no pressure
   ctx.lineWidth = 1;
   ctx.strokeStyle = '#333';
-  ctx.globalAlpha = 0.5;
+  //ctx.globalAlpha = 0.5;
   console.log('Processing no pressure:', event.pointerType, 'X:', event.offsetX, 'Y:', event.offsetY, 'TiltX:', event.tiltX, 'TiltY:', event.tiltY);
 }
 
@@ -252,7 +252,7 @@ function process_max_pressure(event, ctx) {
   ctx.setLineDash([]); // Solid line for max pressure
   ctx.lineWidth = 5;
   ctx.strokeStyle = '#333';
-  ctx.globalAlpha = 1.0;
+  //ctx.globalAlpha = 1.0;
   console.log('Processing max pressure:', event.pointerType, 'X:', event.offsetX, 'Y:', event.offsetY, 'TiltX:', event.tiltX, 'TiltY:', event.tiltY);
 }
 
@@ -261,8 +261,9 @@ function process_pressure(event, ctx) {
   ctx.setLineDash([]); // Solid line for intermediate pressure
   ctx.lineWidth = Math.max(1, event.pressure * 5); // Scale line width
   ctx.strokeStyle = '#333';
-  ctx.globalAlpha = Math.min(1.0, (Math.abs(event.tiltX) + Math.abs(event.tiltY)) / 90); // Transparency based on tilt
-  console.log('Processing intermediate pressure:', event.pressure, 'X:', event.offsetX, 'Y:', event.offsetY, 'TiltX:', event.tiltX, 'TiltY:', event.tiltY);
+  //ctx.globalAlpha = Math.min(1.0, (Math.abs(event.tiltX) + Math.abs(event.tiltY)) / 90); // Transparency based on tilt
+  console.log('Processing intermediate pressure:', event.pressure, 'X:', event.offsetX, 'Y:', event.offsetY, 'altitudeAngle:', event.altitudeAngle);
+  //'TiltX:', event.tiltX, 'TiltY:', event.tiltY);
 }
 
 // Connect to a pen tablet (Wacom, Huion, XP-Pen, Gaomon)
@@ -310,6 +311,7 @@ async function connectPenTablet() {
       
       ctx.beginPath();
       ctx.moveTo(e.offsetX, e.offsetY);
+      ctx.globalAlpha = 0.5;
       if (e.pressure === 0) {
         process_no_pressure(e, ctx);
       } else if (e.pressure === 1) {
