@@ -14,7 +14,7 @@ var useTilt = false;
 // var primaryColorButton = document.getElementById("colorButton31");
 // var secondaryColorButton = document.getElementById("colorButton52");
 
-var buttonProps = new Map();
+//var buttonProps = new Map();
 
 var EPenButton =
     {
@@ -350,13 +350,7 @@ window.addEventListener('load', function () {
                     break;
                 case "pen":
                     // A pen was used
-                    if (buttons == EPenButton.barrel) {
-                        context.strokeStyle = buttonProps.get(secondaryColorButton.id);
-                    }
-                    else {
-                        context.strokeStyle = buttonProps.get(primaryColorButton.id);
-                    }
-
+                    context.strokeStyle = "black";
                     if (useTilt) {
                         // Favor tilts in x direction.
                         context.lineWidth = pressure * 3 * Math.abs(tilt.x);
