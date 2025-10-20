@@ -1,4 +1,4 @@
-const colorBackground = "rgba(255, 200, 120, 1.0)";	// a "tan-ish" color
+const colorBackground = "rgba(255, 255, 255, 1.0)";	// a "tan-ish" color
 const selectedColor = "lightgreen";
 
 var penCanvas = document.getElementById("penCanvas");
@@ -95,8 +95,8 @@ function initPage() {
 // Canvas cleared to restore background color.
 //
 function setCanvasProps() {
-    if (myCanvas.width < window.innerWidth) {
-        myCanvas.width = window.innerWidth - 20;
+    if (penCanvas.width < window.innerWidth) {
+        penCanvas.width = window.innerWidth - 20;
     }
     clearCanvas();	// ensures background saved with drawn image
 }
@@ -122,7 +122,7 @@ function setTilt() {
 //
 function clearCanvas() {
     context.fillStyle = colorBackground;
-    context.fillRect(0, 0, myCanvas.width, myCanvas.height);
+    context.fillRect(0, 0, penCanvas.width, penCanvas.height);
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -131,12 +131,12 @@ function clearCanvas() {
 // function saveCanvas() {
 //     // IE and Edge
 //     if (isMSBrowser()) {
-//         window.navigator.msSaveBlob(myCanvas.msToBlob(), "scribble.png");
+//         window.navigator.msSaveBlob(penCanvas.msToBlob(), "scribble.png");
 //     }
 //     else {
 //         var link = document.getElementById('link');
 //         link.setAttribute('download', 'Scribble.png');
-//         link.setAttribute('href', myCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream"));
+//         link.setAttribute('href', penCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream"));
 //         link.click();
 //     }
 // }
@@ -221,7 +221,7 @@ window.addEventListener('load', function () {
         //	Number.parseFloat(evt.clientY));
 
         var outStr = evt.type;
-        var canvasRect = myCanvas.getBoundingClientRect();
+        var canvasRect = penCanvas.getBoundingClientRect();
         var screenPos = {
             x: evt.clientX,
             y: evt.clientY
