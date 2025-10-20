@@ -8,7 +8,7 @@ var supportsPointerEvents = window.PointerEvent;
 var inStroke = false;
 var posLast = { x: 0, y: 0 };
 var isDrawing = false;
-var reportData = false;
+var reportData = true;
 var useTilt = false;
 
 // var primaryColorButton = document.getElementById("colorButton31");
@@ -95,6 +95,8 @@ function initPage() {
 // Canvas cleared to restore background color.
 //
 function setCanvasProps() {
+    //canvas.width = canvas.offsetWidth;
+    //canvas.height = 250;
     if (penCanvas.width < window.innerWidth) {
         penCanvas.width = window.innerWidth - 20;
     }
@@ -104,10 +106,10 @@ function setCanvasProps() {
 /////////////////////////////////////////////////////////////////////////
 // Sets a flag to enable/disable showing of device data
 //
-function logPointer() {
-    var reportDataVal = document.querySelector('input[value="reportData"]');
-    reportData = reportDataVal.checked;		
-}
+// function logPointer() {
+//     var reportDataVal = document.querySelector('input[value="reportData"]');
+//     reportData = reportDataVal.checked;		
+// }
 
 /////////////////////////////////////////////////////////////////////////
 // Sets a flag to enable/disable use of the pen tilt property.
@@ -210,102 +212,6 @@ window.addEventListener('load', function () {
     ];
 
     /////////////////////////////////////////////////////////////////////////
-    // Handle event rendering and reporting to output
-    // for traditional mouse/touch/pen handling.
-    //
-    eventDraw = function (evt) {
-        //console.log("screenPos:XY:" +
-        //	Number.parseFloat(evt.pageX) + "," +
-        //	Number.parseFloat(evt.pageY) + "; client:XY:" +
-        //	Number.parseFloat(evt.clientX) + "," +
-        //	Number.parseFloat(evt.clientY));
-
-        var outStr = evt.type;
-        var canvasRect = penCanvas.getBoundingClientRect();
-        var screenPos = {
-            x: evt.clientX,
-            y: evt.clientY
-        };
-
-        var pos = {
-            x: screenPos.x - canvasRect.left,
-            y: screenPos.y - canvasRect.top
-        };
-
-        console.log("screenPos XY:" + screenPos.x + "," + screenPos.y);
-
-        if (pos.x == undefined || pos.y == undefined) {
-            console.log("WARNING: undefined position");
-            return;
-        }
-
-        var pressure = evt.pressure;
-
-        if ((typeof (evt.targetTouches) != 'undefined') &&
-            (evt.targetTouches.length > 0) &&
-            (typeof (evt.targetTouches[0].force) != 'undefined')) {
-            outStr += ' - force: ' + evt.targetTouches[0].force;
-        }
-        else if (typeof (evt.webkitForce) != 'undefined') {
-            outStr += ' - webkitForce: ' + evt.webkitForce;
-        }
-        else if (typeof (pressure) != 'undefined') {
-            outStr += ' - pressure: ' + pressure;
-        }
-
-        if (typeof (pressure) == 'undefined') {
-            pressure = 1.0;
-        }
-
-        switch (evt.type) {
-            case "mousedown":
-            case "MSPointerDown":
-            case "touchStart":
-                isDrawing = true;
-                posLast = pos;
-                break;
-
-            case "mouseup":
-            case "MSPointerUp":
-            case "touchEnd":
-                isDrawing = false;
-                break;
-
-            case "mousemove":
-            case "MSPointerMove":
-            case "touchmove":
-                if (isDrawing) {
-                    context.lineWidth = pressure;
-
-                    context.beginPath();
-                    context.lineCap = "round";
-                    context.moveTo(posLast.x, posLast.y);
-
-                    // Draws Bezier curve from context position to midPoint.
-                    var midPoint = midPointBetween(posLast, pos);
-                    context.quadraticCurveTo(posLast.x, posLast.y, midPoint.x, midPoint.y);
-
-                    // This lineTo call eliminates gaps (but leaves flat lines if stroke
-                    // is fast enough).
-                    context.lineTo(pos.x, pos.y);
-                    context.stroke();
-                }
-
-                posLast = pos;
-                break;
-
-            default:
-                break;
-        }
-
-        // Update the readout asynchronously to the event thread.
-        if (reportData) {
-            outStr += '<br>';
-            setTimeout(function () { delayedInnerHTMLFunc(outStr) }, 100);
-        }
-    }
-
-    /////////////////////////////////////////////////////////////////////////
     // Find point between two other points.
     //
     function midPointBetween(p1, p2) {
@@ -321,14 +227,27 @@ window.addEventListener('load', function () {
     function pointerEventDraw(evt) {
         var outStr = "";
         var canvasRect = penCanvas.getBoundingClientRect();
-        var screenPos = {
-            x: evt.clientX,
-            y: evt.clientY
+
+        // Convert pointer event coordinates to canvas pixel coordinates.
+        // Use clientX/Y so this works even if pointer events don't provide offsetX/Y
+        // and account for CSS scaling: canvas.width/rect.width maps CSS pixels -> canvas pixels.
+        var clientX = (typeof evt.clientX === 'number') ? evt.clientX : (evt.pageX - window.scrollX);
+        var clientY = (typeof evt.clientY === 'number') ? evt.clientY : (evt.pageY - window.scrollY);
+
+        // position in CSS pixels relative to the canvas top-left
+        var cssX = clientX - canvasRect.left;
+        var cssY = clientY - canvasRect.top;
+
+        // scale to canvas internal pixel coordinates
+        var pos = {
+            x: (cssX * penCanvas.width) / canvasRect.width,
+            y: (cssY * penCanvas.height) / canvasRect.height
         };
 
-        var pos = {
-            x: screenPos.x - canvasRect.left,
-            y: screenPos.y - canvasRect.top
+        // screenPos kept for reporting in CSS pixels
+        var screenPos = {
+            x: cssX,
+            y: cssY
         };
 
         var pressure = evt.pressure;
@@ -466,8 +385,8 @@ window.addEventListener('load', function () {
     // Show the device data in output element.
     //
     delayedInnerHTMLFunc = function (str) {
-        reportElem.innerHTML += str;
-        reportElem.scrollIntoView(false);	// scroll to bottom
+        console.log(str);
+        penData.textContent = str;
     }
 
     /////////////////////////////////////////////////////////////////////////
