@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PhantomBridge Wacom</title>
+  <title>Itopia Wacom</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -120,7 +120,6 @@
 
     #penCanvas {
     width: 100%;
-    height: 250px;
     background: #fff;
     border: 1px solid #333;
     border-radius: 8px;
@@ -156,28 +155,15 @@
 </head>
 <body>
   <header>
-    <h1>PhantomBridge Wacom</h1>
+    <h1>Itopia Wacom</h1>
   </header>
   <main>
-    <!-- <div class="button-grid">
-      <button onclick="connectPenTablet()">Connect Pen Tablet</button>
-      <button onclick="testPenSupport()">Test Pen Tablet Support</button>
-    </div> -->
     <section id="pen-section">
       <h2>Pen Tablet</h2>
-      <div id="penData">Pen Data:</div>
       <canvas id="penCanvas"></canvas>
       <button onclick="clearCanvas()">Clear Canvas</button>
-      <!-- <h3>Pen Log (copy for devs)</h3> -->
-      <!-- <textarea id="penLog" rows="10" readonly></textarea>
-      <button onclick="copyPenLog()">Copy Pen Log</button>
-      <div id="supportedFeatures">Supported Features: Not tested</div> -->
+      <button onclick="saveLogs()">Collect logs</button>
     </section>
-    <!-- <section id="log-section">
-      <h2>General Log</h2>
-      <textarea id="generalLog" rows="10" readonly></textarea>
-      <button onclick="copyGeneralLog()">Copy General Log</button>
-    </section> -->
     <div id="error"></div>
   </main>
   <script src="pentabletScript.js"></script>

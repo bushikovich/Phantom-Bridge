@@ -1,20 +1,14 @@
-const colorBackground = "rgba(255, 255, 255, 1.0)";	// a "tan-ish" color
+const colorBackground = "rgba(255, 255, 255, 1.0)";	// a "white color
 const selectedColor = "lightgreen";
 
 var penCanvas = document.getElementById("penCanvas");
-var reportElem = document.getElementById("reportElement");
 var context = penCanvas.getContext("2d");
-var supportsPointerEvents = window.PointerEvent;
 var inStroke = false;
 var posLast = { x: 0, y: 0 };
 var isDrawing = false;
-var reportData = true;
 var useTilt = false;
 
-// var primaryColorButton = document.getElementById("colorButton31");
-// var secondaryColorButton = document.getElementById("colorButton52");
-
-//var buttonProps = new Map();
+let outLogs = '';
 
 var EPenButton =
     {
@@ -25,69 +19,11 @@ var EPenButton =
     };
 
 /////////////////////////////////////////////////////////////////////////
-
-var penData = document.getElementById("penData");
-penData.textContent += (supportsPointerEvents ? " [Your browser supports PointerEvents]" : " [Your browser does not support PointerEvents]");
-
-/////////////////////////////////////////////////////////////////////////
 // Initialize page elements
 //
 function initPage() {
     setCanvasProps();
-    // initButton("colorButton11", "red");
-    // initButton("colorButton12", "red");
-    // initButton("colorButton21", "green");
-    // initButton("colorButton22", "green");
-    // initButton("colorButton31", "blue");
-    // initButton("colorButton32", "blue");
-    // initButton("colorButton41", "white");
-    // initButton("colorButton42", "white");
-    // initButton("colorButton51", "black");
-    // initButton("colorButton52", "black");
-    // initButton("colorButton61", "gray");
-    // initButton("colorButton62", "gray");
 }
-
-/////////////////////////////////////////////////////////////////////////
-
-// function initButton(buttonId_I, backgroundColor_I) {
-//     var button = document.getElementById(buttonId_I);
-//     button.style.backgroundColor = backgroundColor_I;
-//     buttonProps.set(buttonId_I, backgroundColor_I);
-//     if (button == primaryColorButton || button == secondaryColorButton)
-//     {
-//         button.style.borderColor = selectedColor;
-//     }
-//     button.onclick = function () { 
-//             //alert(button.id + " background: " + buttonProps.get(button.id));
-//         switch(button.id)
-//         {
-//             case "colorButton11":
-//             case "colorButton21":
-//             case "colorButton31":
-//             case "colorButton41":
-//             case "colorButton51":
-//             case "colorButton61":
-//                 primaryColorButton.style.borderColor = "black";
-//                 primaryColorButton = button;
-//                 primaryColorButton.style.borderColor = selectedColor;
-//                 break;
-//             case "colorButton12":
-//             case "colorButton22":
-//             case "colorButton32":
-//             case "colorButton42":
-//             case "colorButton52":
-//             case "colorButton62":
-//                 secondaryColorButton.style.borderColor = "black";
-//                 secondaryColorButton = button;
-//                 secondaryColorButton.style.borderColor = selectedColor;
-//                 break;
-//             default:
-//                 // no change of color
-//                 alert(button.id + " not found!");
-//         }
-//     };
-// }
 
 /////////////////////////////////////////////////////////////////////////
 // Init canvas properties.
@@ -95,21 +31,11 @@ function initPage() {
 // Canvas cleared to restore background color.
 //
 function setCanvasProps() {
-    //canvas.width = canvas.offsetWidth;
-    //canvas.height = 250;
     if (penCanvas.width < window.innerWidth) {
         penCanvas.width = window.innerWidth - 20;
     }
     clearCanvas();	// ensures background saved with drawn image
 }
-
-/////////////////////////////////////////////////////////////////////////
-// Sets a flag to enable/disable showing of device data
-//
-// function logPointer() {
-//     var reportDataVal = document.querySelector('input[value="reportData"]');
-//     reportData = reportDataVal.checked;		
-// }
 
 /////////////////////////////////////////////////////////////////////////
 // Sets a flag to enable/disable use of the pen tilt property.
@@ -125,36 +51,6 @@ function setTilt() {
 function clearCanvas() {
     context.fillStyle = colorBackground;
     context.fillRect(0, 0, penCanvas.width, penCanvas.height);
-}
-
-/////////////////////////////////////////////////////////////////////////
-// Saves the image on the drawing canvas and then downloads a png.
-//
-// function saveCanvas() {
-//     // IE and Edge
-//     if (isMSBrowser()) {
-//         window.navigator.msSaveBlob(penCanvas.msToBlob(), "scribble.png");
-//     }
-//     else {
-//         var link = document.getElementById('link');
-//         link.setAttribute('download', 'Scribble.png');
-//         link.setAttribute('href', penCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream"));
-//         link.click();
-//     }
-// }
-
-/////////////////////////////////////////////////////////////////////////
-// Returns true if running on IE or Edge
-//
-function isMSBrowser() {
-    return true;//(document.documentMode || /Edge/.test(navigator.userAgent));
-}
-
-/////////////////////////////////////////////////////////////////////////
-// Clears the data report field.
-//
-function clearReport() {
-    reportElem.innerHTML = "";
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -254,10 +150,9 @@ window.addEventListener('load', function () {
         var buttons = evt.buttons;
         var tilt = { x: evt.tiltX, y: evt.tiltY };
         var rotate = evt.twist;
+        var alt = { altitudeAngle: evt.altitudeAngle, azimuthAngle: evt.azimuthAngle };
 
-        if (reportData) {
-            outStr = evt.pointerType + " , " + evt.type + " : "
-        }
+        outStr = evt.pointerType + " , " + evt.type + " : "
 
         if (evt.pointerType) {
             switch (evt.pointerType) {
@@ -273,9 +168,6 @@ window.addEventListener('load', function () {
                     if (useTilt) {
                         // Favor tilts in x direction.
                         context.lineWidth = pressure * 3 * Math.abs(tilt.x);
-                        // Uncomment for a "vaseline" (smeary) effect:
-                        //context.shadowColor = "blue";
-                        //context.shadowBlur = context.lineWidth / 2;
                     }
                     else {
                         context.lineWidth = pressure * 10;
@@ -283,8 +175,6 @@ window.addEventListener('load', function () {
                     break;
                 case "mouse":
                     // A mouse was used
-                    //pressure = 2;
-                    //context.lineWidth = pressure;
                     context.strokeStyle = "black";
                     if (buttons == EPenButton.barrel)
                     {
@@ -359,51 +249,118 @@ window.addEventListener('load', function () {
                     break;
 
                 default:
-                    outStr += "WARNING: unhandled event: " + evt.type;
-                    console.log("WARNING: unhandled event: " + evt.type);
+                    collectLogs("WARNING: unhandled event: " + evt.type);
                     break;
             }
 
-            // Reporting data will cause drawing lag, resulting in flat lines.
-            // IE11 barfs on Number.parseFloat(xxxx).toFixed(3)
-            if (reportData) {
-                outStr +=
-                    "X:" + parseFloat(screenPos.x).toFixed(3) + ", " +
-                    "Y:" + parseFloat(screenPos.y).toFixed(3) + ", " +
-                    "P:" + parseFloat(pressure).toFixed(3) + ", " +
-                    "Tx:" + parseFloat(tilt.x).toFixed(3) + ", " +
-                    "Ty:" + parseFloat(tilt.y).toFixed(3) + ", " +
-                    "R:" + parseFloat(rotate).toFixed(3) + ", " +
-                    "B:" + buttons + '<br>';
+            outStr +=
+                "X:" + parseFloat(screenPos.x).toFixed(3) + ", " +
+                "Y:" + parseFloat(screenPos.y).toFixed(3) + ", " +
+                "P:" + parseFloat(pressure).toFixed(3) + ", " +
+                "Tx:" + parseFloat(tilt.x).toFixed(3) + ", " +
+                "Ty:" + parseFloat(tilt.y).toFixed(3) + ", " +
+                "R:" + parseFloat(rotate).toFixed(3) + ", " +
+                "Alt:" + parseFloat(alt.altitudeAngle).toFixed(3) + ", " +
+                "Az:" + parseFloat(alt.azimuthAngle).toFixed(3) + ", " +
+                "B:" + buttons + '<br>';
 
-                setTimeout(function () { delayedInnerHTMLFunc(outStr) }, 100);
-            }
+            collectLogs(outStr);
         }
-    }
-
-    /////////////////////////////////////////////////////////////////////////
-    // Show the device data in output element.
-    //
-    delayedInnerHTMLFunc = function (str) {
-        console.log(str);
-        penData.textContent = str;
     }
 
     /////////////////////////////////////////////////////////////////////////
     // These event handlers are set up once when the page is loaded.
     // Note that there are two alternate sets of handlers depending on whether
     // PointerEvents are handled.
-    //
-    if (supportsPointerEvents) {
-        // if Pointer Events are supported, only listen to pointer events
-        for (var idx = 0; idx < pointerEvents.length; idx++) {
-            penCanvas.addEventListener(pointerEvents[idx], pointerEventDraw, false);
-        }
-    }
-    else {
-        // traditional mouse/touch/pen event handlers
-        for (var idx = 0; idx < events.length; idx++) {
-            penCanvas.addEventListener(events[idx], eventDraw, false);
-        }
+    for (var idx = 0; idx < pointerEvents.length; idx++) {
+        penCanvas.addEventListener(pointerEvents[idx], pointerEventDraw, false);
     }
 }, true);  // end window.addEventListener
+
+// Collect logs: accepts multiple arguments (strings or objects) and appends them to outLogs
+function collectLogs(...lines) {
+  try {
+    // Convert each line to a string safely
+    const body = lines.map(l => {
+      if (typeof l === 'string') return l;
+      try { return JSON.stringify(l); } catch (e) { return String(l); }
+    }).join(' ');
+    outLogs += body + '\n';
+    // Also output to console.lof for developer visibility
+    try { console.log(...lines); } catch (e) { /* ignore */ }
+  } catch (err) {
+    console.error('collectLogs error', err);
+    const eDiv = document.getElementById('error');
+    if (eDiv) {
+      eDiv.textContent = 'collectLogs error: ' + err.message;
+      eDiv.classList.add('show');
+    }
+  }
+}
+
+// Collect an error message: similar to collectLogs but tagged as ERROR and logs to console.error
+function collectError(...lines) {
+  try {
+    const body = lines.map(l => {
+      if (typeof l === 'string') return l;
+      try { return JSON.stringify(l); } catch (e) { return String(l); }
+    }).join(' ');
+    outLogs += body + '\n';
+    // Also output to console.error for developer visibility
+    try { console.error(...lines); } catch (e) { /* ignore */ }
+    const eDiv = document.getElementById('error');
+    if (eDiv) {
+      eDiv.textContent = body;
+      eDiv.classList.add('show');
+    }
+  } catch (err) {
+    console.error('collectError error', err);
+  }
+}
+
+async function saveLogs(){
+  const now = new Date().toISOString();
+  const filename = `itopia-logs-${now.replace(/[:.]/g,'-')}.txt`;
+  await saveLogsToFile(outLogs, filename);
+  const eDiv = document.getElementById('error');
+  if (eDiv) { 
+    eDiv.textContent = 'Logs saved: ' + filename; 
+    eDiv.classList.add('show'); 
+  }
+}
+
+// Save logs using File System Access API when possible, otherwise fallback to download
+async function saveLogsToFile(text, filename) {
+  // Try File System Access API
+  try {
+    if (window.showSaveFilePicker) {
+      const opts = {
+        suggestedName: filename,
+        types: [{ description: 'Text Files', accept: { 'text/plain': ['.txt'] } }]
+      };
+      const handle = await window.showSaveFilePicker(opts);
+      const writable = await handle.createWritable();
+      await writable.write(text);
+      await writable.close();
+      return;
+    }
+  } catch (e) {
+    console.warn('File System Access API save failed, falling back to download:', e.message);
+  }
+
+  // Fallback: create blob and trigger download
+  try {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    collectError('Fallback save failed:', e);
+    throw e;
+  }
+}
