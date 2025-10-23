@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Itopia Wacom</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="pentable">
+  <header>
+    <h1 class="pentable">Itopia Wacom</h1>
+  </header>
+  <main>
+    <section id="pen-section">
+      <h2>Pen Tablet</h2>
+      <canvas id="penCanvas"></canvas>
+      <button onclick="clearCanvas()">Clear Canvas</button>
+      <button onclick="saveLogs()">Collect logs</button>
+    </section>
+    <div id="error"></div>
+  </main>
+  <script src="pentabletScript.js"></script>
+</body>
+</html>

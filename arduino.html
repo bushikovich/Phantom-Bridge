@@ -5,21 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Itopia Arduino</title>
   <link rel="manifest" href="manifest.json">
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff; }
-    h1 { color: #333; }
-    button { background: #4285f4; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 5px 0; padding: 10px; background: #f0f0f0; border-radius: 5px; cursor: pointer; }
-    progress { width: 100%; height: 20px; }
-    #error { color: red; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>Itopia Arduino</h1>
   <label for="arduinoMessage">Message to Arduino:</label>
-  <input type="text" id="arduinoMessage" style="width:70%;padding:8px;margin:8px 0;" placeholder="Enter your message here">
-  <div style="margin:8px 0;">
+  <input type="text" id="arduinoMessage" class="arduino-input" placeholder="Enter your message here">
+  <div class="spaced">
     <label for="baudRate">Baud rate:</label>
     <select id="baudRate">
       <option value="300">300</option>
@@ -36,9 +28,9 @@
   <button id="connectArduinoBtn" onclick="connectArduinoPort()">Connect Arduino</button>
   <button onclick="transmitArduinoMessage()">Transmit</button>
   <button onclick="saveLogs()">Collect logs</button>
-  <div id="arduinoStatus" style="margin-top:8px;color:#666">Disconnected</div>
+  <div id="arduinoStatus" class="status">Disconnected</div>
   <div id="error"></div>
-  <div id="arduinoReceived" style="margin-top:16px;color:#222;background:#e0e0e0;padding:10px;border-radius:5px;"></div>
+  <div id="arduinoReceived" class="received"></div>
 
   <script src="script.js"></script>
 </body>

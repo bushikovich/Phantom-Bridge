@@ -67,6 +67,9 @@ async function foundPrevDir(currentDirHandle){
 }
 
 async function printDir(currentDirHandle){
+  const fileList = document.getElementById('fileList');
+  if (!fileList) return; // nothing to show on pages without a file list
+
   fileList.innerHTML = '';
   //back button
   const back = document.createElement('li');
@@ -255,8 +258,8 @@ async function saveLogsToFile(text, filename) {
 }
 
 async function gotoWacom() {
-  if (!checkAPISupport('pepointerEvent')) return;
-  window.location.href = "pentable.html";
+  if (!checkAPISupport('PEPointerEvent')) return;
+  window.location.href = "pentablet.html";
 }
 
 async function gotoUSB() {
@@ -273,6 +276,7 @@ async function gotoArduino() {
 let arduinoReader = null;
 let arduinoTextDecoder = null;
 let arduinoStreamInitialized = false;
+let gPort = null;
 
 function getSelectedBaudRate() {
   const el = document.getElementById('baudRate');
@@ -291,7 +295,7 @@ async function transmitArduinoMessage() {
   }
   try {
     // Ensure port is already connected by user action
-    if (!window.gPort || !window.gPort.readable) {
+    if (!gPort || !gPort.readable) {
       errorDiv.textContent = 'Please connect to the Arduino first (use Connect Arduino)';
       errorDiv.classList.add('show');
       return;
@@ -299,7 +303,7 @@ async function transmitArduinoMessage() {
     // Encode message as UTF-8 and send
     const encoder = new TextEncoder();
     const data = encoder.encode(message + "\n");
-    const writer = window.gPort.writable.getWriter();
+    const writer = gPort.writable.getWriter();
     await writer.write(data);
     writer.releaseLock();
     errorDiv.textContent = 'Message sent to Arduino';
@@ -334,13 +338,13 @@ async function connectArduinoPort() {
       status.textContent = 'WebSerial API not supported';
       return;
     }
-    window.gPort = await navigator.serial.requestPort({});
+    gPort = await navigator.serial.requestPort({});
     const baud = getSelectedBaudRate();
-    await window.gPort.open({ baudRate: baud });
+    await gPort.open({ baudRate: baud });
 
     // Initialize reader
     arduinoTextDecoder = new TextDecoderStream();
-    window.gPort.readable.pipeTo(arduinoTextDecoder.writable);
+    gPort.readable.pipeTo(arduinoTextDecoder.writable);
     arduinoReader = arduinoTextDecoder.readable.getReader();
     arduinoStreamInitialized = true;
 
@@ -352,13 +356,54 @@ async function connectArduinoPort() {
   }
 }
 
+// Disconnect/close Arduino port and cleanup reader/streams
+async function disconnectArduinoPort() {
+  const status = document.getElementById('arduinoStatus');
+  try {
+    // Cancel any pending read and release reader lock
+    if (arduinoReader) {
+      try {
+        await arduinoReader.cancel();
+      } catch (e) {
+        console.warn('arduinoReader.cancel() failed:', e);
+      }
+      try { arduinoReader.releaseLock(); } catch (e) { /* ignore */ }
+      arduinoReader = null;
+    }
+
+    // Clear decoder/flags
+    arduinoTextDecoder = null;
+    arduinoStreamInitialized = false;
+
+    // Close the port if open
+    if (gPort) {
+      try {
+        await gPort.close();
+      } catch (e) {
+        console.warn('gPort.close() failed:', e);
+      }
+      gPort = null;
+    }
+
+    if (status) status.textContent = 'Disconnected';
+    collectLogs('Arduino disconnected');
+  } catch (err) {
+    collectError('Disconnect Arduino Error:', err);
+    if (status) status.textContent = 'Disconnect error: ' + (err.message || err.name);
+  }
+}
+
+// Ensure we close serial connection when page is unloaded or hidden
+window.addEventListener('beforeunload', () => { disconnectArduinoPort(); });
+window.addEventListener('pagehide', () => { disconnectArduinoPort(); });
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   collectLogs('Itopia loaded');
   collectLogs('File System API support:', !!window.showDirectoryPicker);
   collectLogs('PointerEvent API support:', !!window.PointerEvent);
   collectLogs('WebSerial API support:', !!navigator.serial);
-  if (!checkAPISupport('fileSystem') || !checkAPISupport('pointerEvent') || !checkAPISupport('webserial')) {
+  if (!checkAPISupport('fileSystem') || !checkAPISupport('PEPointerEvent') || !checkAPISupport('webserial')) {
     console.warn('Some APIs not supported');
   }
 });
